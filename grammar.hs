@@ -12,31 +12,66 @@ command ::= <assignmentArray>
             | <declareChar>
             | <declareDouble>
 
-assignmentArray ::=    
+declareArith ::= "int" <identifier> "=" <arithExp> | "double" <identifier> "=" <arithExp>
 
-assignmentArith ::=
+declareBool ::= "bool" <identifier> "=" <bollExp> 
 
-assignmentBool ::=
+declareArray ::= "array" <identifier> "[" <arithExp> "]" 
 
-skip ::=
 
-ifThenElse ::=
+assignmentArith ::= <identifier> "=" <arithExp>
 
-while ::=
+assignmentBool ::= <identifier> "=" <boolExp>
 
-declareArith ::=
+arrayAssignmentOneValue ::= <identifier> "[" <arithExp> "]" "=" <arithExp>
 
-declareBool ::=
+arrayAssignmentValues ::= <identifier> "=" "[" <arithExp> ["," <arithExp>]* "]" 
 
-declareArray ::=
+skip ::= "skip"
 
-declareChar ::= fare lower e upper
+ifThenElse ::= "if" "("<boolExp>")" "then" "{"<program>"}" | "if" "("<boolExp>")" "then" "{"<program>"}" "else" "{"<program>"}"
 
-declareDouble ::= usare punto '.' tra le digit
+while ::= "while" "(" <boolExp> ")" "{" <program> "}"
 
-digit ::= 
+char ::= <lowerCase> | <upperCase>
 
-arithExp ::= 
-boolExp :==
+<lowerCase> ::= "a-z"
+
+<upperCase> ::= "A-Z"
+
+digit ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+
+identifier ::= <lowerCase> | <lowerCase> <alphanum>
+
+<alphanum> ::= <upperCase> <alphanum> | <lowerCase> <alphanum> | <naturalNum> <alphanum> | <upperCase> | <lowerCase> | <naturalNum>
+
+arithExp ::= <arithTerm> ["+" <arithTerm>]* | <arithTerm> ["-" <arithTerm>]*
+
+arithTerm ::= <arithFactor> ["*" <arithFactor>]* | <arithFactor> ["/" <arithFactor>]* | 
+            <arithFactor> [{"^"} <arithFactor>]* | <arithFactor> ["sqrt" <arithFactor>]* 
+
+arithFactor :== <integer> | <float> | "(" <arithExp> ")" | <identifier> "[" <arithExp> "]"
+
+integer :==  "-" <naturalNum> | <naturalNum>
+
+naturalNum :== <digit> | <digit> <naturalNum>
+
+float :== <digit> "." <digit> | <digit> "." <digit> <digit> |<digit> "." <digit> <digit> <digit>
+
+boolExp ::= <boolTerm> ["OR" <boolTerm>]*
+
+boolTerm ::= <bfact> ["AND" <boolFact>]*
+
+boolFact ::= "True"
+            | "False"
+            | "not" <boolExp>
+            | "(" <boolExp> ")"
+            | <arithExp> "<" <arithExp> 
+            | <arithExp>  "<=" <arithExp> 
+            | <arithExp> ">" <arithExp> 
+            | <arithExp>  ">=" <arithExp> 
+            | <arithExp> "==" <arithExp> 
+            | <arithExp>  "!=" <arithExp> 
+            | <identifier>
 
 
