@@ -351,44 +351,55 @@ command =
 program :: Parser [Command]         
 program = do many command                   
 
+
 arithDeclare :: Parser Command
 arithDeclare =
   do
-    symbol "int"              
-    i <- identifier
-    symbol "="
-    r <- ArithDeclare i <$> arithExp      
-    symbol ";"
-    return r
+    symbol "int"
+    id <- identifier
+    do
+        symbol "="
+        value <- arithExpr
+        symbol ";"
+        return (DeclareInteger id (Just value))
+        <|>
+        do
+            symbolP ";"
+            return (DeclareInteger id Nothing)
 
 
 boolDeclare :: Parser Command
 boolDeclare =
   do
     symbol "bool"           
-    i <- identifier
+    id <- identifier
     symbol "="
-    val <- bExprP
+    val <- boolExpr
         symbolP ";"
-        return (DeclareBoolean name (Just val))
+        return (DeclareBoolean id (Just val))
         <|>
         do
             symbolP ";"
-            return (DeclareBoolean name Nothing)
+            return (DeclareBoolean id Nothing)
 
 
 arrDeclare  :: Parser Command
 arrDeclare  =
   do
-    symbol "arr"             -- arr id[n];   
-    i <- identifier
+    symbol "array"            
     symbol "["
-    j <- arithExp 
-    symbol "]"
-    symbol ";"
-    return (ArrayDeclare i j)  
-      
-
+    size <- arithExpr
+    symbolP "]"
+    name <- identifier
+    do
+        symbol "="
+        value <- arithExpr
+        symbol ";"
+        return (DeclareArray name size (Just value))
+        <|>
+        do
+            symbol ";"
+            return (DeclareArray name size Nothing)
 
 arithAssign :: Parser Command
 arithAssign =
@@ -397,7 +408,7 @@ arithAssign =
     symbol "="
     value <- arithExpr
     symbol ";"
-    return (AssignInteger name val)
+    return (AssignInteger id value)
     
 
 boolAssign  :: Parser Command
@@ -405,43 +416,53 @@ boolAssign  =
   do
     id <- identifier
     symbol "="
-    val <- boolExpr
+    value <- boolExpr
     symbol ";"
-    return (AssignBoolean name val)
+    return (AssignBoolean id value)
 
 
-arrAssign  :: Parser Command
-arrAssign  =
+arrOneAssign :: Parser Com
+arrOneAssign = do
+    name <- identifier
+    symbol "["
+    position <- arithExpr
+    symbol "]"
+    symbol "="
+    value <- arithExpr
+    symbolP ";"
+    return (arrOneAssign name position value)
+
+
+arrMulAssign :: Parser Com
+arrMulAssign = do
+    name <- identifier
+    symbol "="
+    value <- aExpr
+    symbol ";"
+    return (arrMulAssign name value)
+
+arrMulAssign  :: Parser Command
+arrMulAssign  =
   do
     i <- identifier  
-    do           
-      symbol "["
-      j <- arithExp 
-      symbol "]"
-      symbol "="
-      r <- ArrOneAssign  i j <$> arithExp 
-      symbol ";"
-      return r
-      <|>
-        do 
-          symbol "="
-          symbol "["
-          i' <- arithExp
-          i'' <- many (do symbol ","; arithExp)
-          symbol "]"
-          symbol ";"
-          return (ArrMulAssign  i (Array (i':i'')))
-      <|>
-        do 
-          symbol "["
-          symbol "]"
-          symbol "="
-          x <- identifier
-          symbol "["
-          symbol "]"
-          symbol ";"
-          return (ArrMulAssign  i (ArrVariable x)) 
-
+    do 
+    symbol "="
+    symbol "["
+    a <- arithExp
+    b <- many (do symbol ","; arithExp)
+    symbol "]"
+    symbol ";"
+    return (ArrFullAssign i (Array (a:b)))
+    <|>
+      do 
+        symbol "["
+        symbol "]"
+        symbol "="
+        x <- identifier
+        symbol "["
+        symbol "]"
+        symbol ";"
+        return (ArrFullAssign i (ArrayVariable x)) 
 
 skip  :: Parser Command
 skip  =

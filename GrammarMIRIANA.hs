@@ -8,7 +8,6 @@ data Type =
     | CharType Char
     | BoolType Bool
     | ArrayTypeInt [Int]
-    | ArrayTypeChar [Char]
     deriving Show 
 
 --Arithmetic expressions
