@@ -22,7 +22,7 @@ data ArithExpr =
     | Mul ArithExpr ArithExpr
     | Div ArithExpr ArithExpr
     | Power ArithExpr ArithExpr
-    | Sqrt ArithExpr ArithExpr
+    | Sqrt ArithExpr
     deriving Show
 
 -- Boolean expressions

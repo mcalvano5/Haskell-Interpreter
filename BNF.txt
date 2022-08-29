@@ -14,7 +14,7 @@ command ::= <assignmentArray>
 
 declareArith ::= "int" <identifier> "=" <arithExp> | "double" <identifier> "=" <arithExp>
 
-declareBool ::= "bool" <identifier> "=" <bollExp> 
+declareBool ::= "bool" <identifier> "=" <boolExp> 
 
 declareArray ::= "array" <identifier> "[" <arithExp> "]" 
 
