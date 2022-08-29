@@ -1,4 +1,4 @@
-module Grammar where
+module GrammarMIRIANA where
  --  In Haskell, you can have many constructors for your data type, 
  --  separated by a vertical bar |. Each of your constructors then has its own list of data types
 
@@ -24,6 +24,12 @@ data ArithExpr =
     | Power ArithExpr ArithExpr
     | Sqrt ArithExpr ArithExpr
     deriving Show
+
+data ArrayExpr =                -- all expression that give Array as result
+    Array [ArithExpr]
+    | ArrVariable String
+    deriving Show
+
 
 -- Boolean expressions
 data BoolExpr =

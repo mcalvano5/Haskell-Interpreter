@@ -56,9 +56,9 @@ integer :==  "-" <naturalNum> | <naturalNum>
 
 naturalNum :== <digit> | <digit> <naturalNum>
 
-float :== <naturalNum> "." <naturalNum> [<exponent>] | <naturalNum> <exponent>
+float :== <naturalNum> "." <naturalNum> [<exponent>] | <naturalNum> <exponent> | "-" <naturalNum> "." <naturalNum> [<exponent>] | "-" <naturalNum> <exponent>
 
-exponent :== ("e"|"E") ["+"|"-"] <naturalNum>
+exponent :== "e" ["+"|"-"] <naturalNum>
 
 boolExp ::= <boolTerm> ["OR" <boolTerm>]*
 

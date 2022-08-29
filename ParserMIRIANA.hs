@@ -1,6 +1,11 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use <$>" #-}
 module ParserMIRIANA where
 import GrammarMIRIANA
-
+    ( BoolExpr(BooleanIdentifier, Or, And, Boolean, Not, LowerThan,
+               GreaterThan, LowerEqualThan, GreaterEqualThan, EqualTo, Different),
+      ArithExpr(ArithVariable, Sum, Sub, Mul, Div, Power, Sqrt, Constant,
+                ArrayVariable), ArrayExpr(ArrayVariable, Array), Command (..) )
 
 
 
@@ -14,7 +19,7 @@ instance Functor Parser where
 
 instance Applicative Parser where
   pure v = P (\input -> Just (v, input))
-  
+
   (P pg) <*> px = P (\input -> case pg input of
     Nothing -> Nothing
     --[(g, out)] -> case fmap g px of (P p) -> p out)
@@ -36,8 +41,8 @@ class Monad f => Alternative f where
   many x = some x <|> pure []
   some x = pure (:) <*> x <*> many x
   chain :: f a -> f (a -> a -> a) -> f a
-  chain p op = do a <- p; rest a 
-    where 
+  chain p op = do a <- p; rest a
+    where
         rest a = (do f <- op; a' <- p; rest (f a a')) <|> return a
 
 
@@ -57,7 +62,7 @@ readNext = P (\input -> case input of
 
 -- Checks if x satisfies a property given as input
 sat :: (Char -> Bool) -> Parser Char
-sat p = 
+sat p =
   do {
     x <- readNext;
     if p x then return x else empty;
@@ -71,14 +76,14 @@ sat p =
 digitCase :: Parser Char
 digitCase = sat isDigit
 
-digit :: [Char]             
+digit :: [Char]
 digit = ['0' .. '9']
 
-isDigit :: Char -> Bool  
-isDigit x = elem x digit   
+isDigit :: Char -> Bool
+isDigit x = elem x digit
 
 --LOWER CASE
-lowerCase :: Parser Char 
+lowerCase :: Parser Char
 lowerCase = sat isLower
 
 lowers :: [Char]
@@ -98,14 +103,14 @@ isUpper :: Char -> Bool
 isUpper x = elem x uppers
 
 --LETTER
-isLetter :: Char -> Bool 
+isLetter :: Char -> Bool
 isLetter x = isUpper x || isLower x
 
-letter :: Parser Char 
+letter :: Parser Char
 letter = sat isLetter
 
 --ALPHANUM
-isAlphaNum :: Char -> Bool 
+isAlphaNum :: Char -> Bool
 isAlphaNum x = isLetter x || isDigit x
 
 alphaNum :: Parser Char
@@ -117,41 +122,84 @@ char x = sat (== x)
 
 -- using char we can define a parser string xs for the string of characters xs, with the string
 -- itself returned as the result value
-string :: String -> Parser String 
+string :: String -> Parser String
 string [] = return []
-string (x : xs) = 
-    do 
+string (x : xs) =
+    do
         char x
-        string xs 
+        string xs
         return (x : xs)
 
 --Using many and some, we can now define parsers for identifiers (variable names) comprising a lowercase
 --letter followed by zero or more alphanumeric characters, natural numbers comprising one or more
 --digits, and spacing comprising zero or more space, tab, and newline characters:
-anIdentifier :: Parser String  
-anIdentifier = 
-    do 
+anIdentifier :: Parser String
+anIdentifier =
+    do
         x <- letter
         xs <- many alphaNum    -- Many takes from 0 to n
         return (x : xs)
 
 
--- Natural number
-nat :: Parser Int        
-nat =                   
-    do 
+-- Natural number with Integer
+nat :: Parser Int
+nat =
+    do
         xs <- some digitCase
         return (read xs)
 
-
 --Integer positive and negative numbers
-int :: Parser Int                  
-int = 
+int :: Parser Int
+int =
     do
-    char '-' 
+    char '-'
     n <- nat
     return (-n)
     <|> nat
+
+-- Natural number with Float
+natFloat :: Parser Float
+natFloat =
+    do float
+    where float = do 
+                    xs <- some digitCase 
+                    symbol "e" 
+                    symbol "+" 
+                    xs <- some digitCase
+                    return (read xs)
+                  <|> 
+                  do 
+                    xs <- some digitCase 
+                    symbol "e" 
+                    symbol "-" 
+                    xs <- some digitCase
+                    return (read xs)
+                  <|> 
+                  do 
+                    xs <- some digitCase 
+                    symbol "." 
+                    xs <- some digitCase
+                    return (read xs)
+                  <|> 
+                  do 
+                    xs <- some digitCase 
+                    symbol "." 
+                    xs <- some digitCase
+                    symbol "e" 
+                    symbol "-" 
+                    xs <- some digitCase
+                    return (read xs)
+       
+
+
+--Float positive and negative numbers
+float :: Parser Float
+float =
+    do
+    char '-'
+    nf <- natFloat
+    return (-nf)
+    <|> natFloat
 
 
 --Spaces
@@ -161,17 +209,17 @@ spaces = ['\n', '\t', '\r', ' ']
 isSpace :: Char -> Bool
 isSpace x = elem x spaces
 
-aSpace :: Parser ()               
-aSpace = do 
-            many (sat isSpace)        
-            return ()   
+aSpace :: Parser ()
+aSpace = do
+            many (sat isSpace)
+            return ()
 
 --Most real-life parsers allow spacing to be freely used around the basic tokens in their input string. For
 --example, the strings 1+2 and 1 + 2 are both parsed in the same way by GHC. To handle such spacing, we
 --define a new primitive that ignores any space before and after applying a parser for a token
 token :: Parser a -> Parser a         -- deletes spaces
 token p =
-    do 
+    do
         aSpace
         v <- p
         aSpace
@@ -179,16 +227,16 @@ token p =
 
 -- Using token, we can now define parsers that ignore spacing around identifiers, natural numbers,
 --integers and special symbols
-identifier :: Parser String           
+identifier :: Parser String
 identifier = token anIdentifier
 
-naturalNumber :: Parser Int           
+naturalNumber :: Parser Int
 naturalNumber = token int
 
-integer :: Parser Int                 
+integer :: Parser Int
 integer = token int
 
-symbol :: String -> Parser String     
+symbol :: String -> Parser String
 symbol xs = token (string xs)
 
 -- ARITHMETIC EVALUATION --
@@ -197,44 +245,44 @@ symbol xs = token (string xs)
 --the empty string ϵ becomes the empty parser, special symbols such as + and * are handled using the symbol function, 
 --and natural numbers are parsed using the natural primitive
 
-arithExp  :: Parser ArithExpr         
+arithExp  :: Parser ArithExpr
 arithExp = do chain arithTerm op
     where  op =  (do symbol "+"; return Sum)
                  <|> do symbol "-"; return Sub
 
-arithTerm :: Parser ArithExpr       
-arithTerm = do chain arithFactor op     
+arithTerm :: Parser ArithExpr
+arithTerm = do chain arithFactor op
     where op = (do symbol "*"; return Mul)
             <|> (do symbol "/"; return Div)
             <|> (do symbol "^"; return Power)
-            <|> do symbol "!^"; return Sqrt 
+            <|> do symbol "!^"; return Sqrt
 
 arithFactor :: Parser ArithExpr
 arithFactor = do
-    (Constant <$> integer)      
+    (Constant <$> integer)
         <|> do
-            i <- identifier     
+            i <- identifier
             do
-                symbol "["      
-                n <- arithExp  
+                symbol "["
+                n <- arithExp
                 symbol "]"
                 return (ArrayVariable i n)
-                <|> return (ArithVariable i) 
+                <|> return (ArithVariable i)
         <|> do
-            symbol "("                   
-            a <- arithExp 
+            symbol "("
+            a <- arithExp
             symbol ")"
             return a
 
 --Boolean
-boolExp :: Parser BoolExpr          
-boolExp = chain boolTerm op            
-  where op = do                  
+boolExp :: Parser BoolExpr
+boolExp = chain boolTerm op
+  where op = do
             symbol "Or"
             return Or
 
-boolTerm :: Parser BoolExpr        
-boolTerm = chain boolFact op        
+boolTerm :: Parser BoolExpr
+boolTerm = chain boolFact op
   where op = do
             symbol "And"
             return And
@@ -256,30 +304,182 @@ boolFact =
       b <- boolExp
       symbol ")"
       return b
-    <|> do 
-        a1 <- arithExp 
+    <|> do
+        a1 <- arithExp
         do
             symbol "<"
-            a2 <- arithExp 
+            a2 <- arithExp
             return (LowerThan a1 a2)
             <|> do
               symbol ">"
-              a2 <- arithExp 
+              a2 <- arithExp
               return (GreaterThan a1 a2)
             <|> do
               symbol "<="
-              a2 <- arithExp 
+              a2 <- arithExp
               return (LowerEqualThan a1 a2)
             <|> do
               symbol ">="
-              a2 <- arithExp 
+              a2 <- arithExp
               return (GreaterEqualThan a1 a2)
             <|> do
               symbol "=="
-              a2 <- arithExp 
+              a2 <- arithExp
               return (EqualTo a1 a2)
             <|> do
               symbol "!="
-              a2 <- arithExp 
+              a2 <- arithExp
               return (Different a1 a2)
-           <|> (BooleanIdentifier <$> identifier) 
+           <|> (BooleanIdentifier <$> identifier)
+
+
+--Commansds
+command :: Parser Command
+command =
+   ifThenElse 
+   <|> while 
+   <|> arithDeclare 
+   <|> boolDeclare 
+   <|> arrayDeclare 
+   <|> arithAssign 
+   <|> boolAssign 
+   <|> arrOneAssign 
+   <|> arrMulAssign 
+   <|> skip
+
+
+program :: Parser [Command]         
+program = do many command                   
+
+arithDeclare :: Parser Command
+arithDeclare =
+  do
+    symbol "int"              
+    i <- identifier
+    symbol "="
+    r <- ArithDeclare i <$> arithExp      
+    symbol ";"
+    return r
+
+
+boolDeclare :: Parser Command
+boolDeclare =
+  do
+    symbol "bool"           
+    i <- identifier
+    symbol "="
+    val <- bExprP
+        symbolP ";"
+        return (DeclareBoolean name (Just val))
+        <|>
+        do
+            symbolP ";"
+            return (DeclareBoolean name Nothing)
+
+
+arrDeclare  :: Parser Command
+arrDeclare  =
+  do
+    symbol "arr"             -- arr id[n];   
+    i <- identifier
+    symbol "["
+    j <- arithExp 
+    symbol "]"
+    symbol ";"
+    return (ArrayDeclare i j)  
+      
+
+
+arithAssign :: Parser Command
+arithAssign =
+  do
+    i <- identifier
+    symbol "="
+    value <- arithExpr
+    symbol ";"
+    return (AssignInteger name val)
+    
+
+boolAssign  :: Parser Command
+boolAssign  =
+  do
+    id <- identifier
+    symbol "="
+    val <- boolExpr
+    symbol ";"
+    return (AssignBoolean name val)
+
+
+arrAssign  :: Parser Command
+arrAssign  =
+  do
+    i <- identifier  
+    do           
+      symbol "["
+      j <- arithExp 
+      symbol "]"
+      symbol "="
+      r <- ArrOneAssign  i j <$> arithExp 
+      symbol ";"
+      return r
+      <|>
+        do 
+          symbol "="
+          symbol "["
+          i' <- arithExp
+          i'' <- many (do symbol ","; arithExp)
+          symbol "]"
+          symbol ";"
+          return (ArrMulAssign  i (Array (i':i'')))
+      <|>
+        do 
+          symbol "["
+          symbol "]"
+          symbol "="
+          x <- identifier
+          symbol "["
+          symbol "]"
+          symbol ";"
+          return (ArrMulAssign  i (ArrVariable x)) 
+
+
+skip  :: Parser Command
+skip  =
+  do
+    symbol "skip"
+    symbol ";"
+    return Skip 
+
+
+ifThenElse :: Parser Command
+ifThenElse =
+  do
+    symbol "if"
+    symbol "("
+    b <- boolExp
+    symbol ")"
+    symbol "{"
+    thenP <- program
+    symbol "}"
+    do
+      symbol "else"
+      symbol "{"
+      elseP <- program
+      symbol "}"
+      return (Ifelse b thenP (Just elseProg))
+      <|> do
+        return (Ifelse b thenP Nothing)
+
+
+while :: Parser Command
+while =
+  do
+    symbol "while"
+    symbol "("
+    b <- boolExp
+    symbol ")"
+    symbol "{"
+    p <- program
+    symbol "}"
+    return (While b p)
+
