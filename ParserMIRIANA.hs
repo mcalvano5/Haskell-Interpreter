@@ -1,5 +1,7 @@
-module Parser where
-import Grammar
+module ParserMIRIANA where
+import GrammarMIRIANA
+
+
 
 
 newtype Parser a = P (String -> Maybe (a, String))
