@@ -2,6 +2,8 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
 {-# HLINT ignore "Use <$>" #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# OPTIONS_GHC -Wno-deferred-out-of-scope-variables #-}
 module InterpreterMIRIANA where
 import ArrayMIRIANA
 import GrammarMIRIANA    
@@ -17,7 +19,6 @@ type Env = [Variable]
 -- I define the operations to exploit the Env
 
 -- This modifies the Environment after some modification to variables.
-
 modifyEnv :: Env -> Variable -> Env 
 modifyEnv [] var = [var]
 modifyEnv (x:xs) newVar = 
@@ -27,7 +28,6 @@ modifyEnv (x:xs) newVar =
 
 
 -- This returns the value of the variable 
-
 searchVariable:: Env -> String-> Maybe Type
 searchVariable [] varname = Nothing
 searchVariable (x:xs) varname = if (name x) == varname
@@ -43,17 +43,16 @@ arithExprEval env (Constant c) = Just c
 arithExprEval env (ArithVariable c) = 
     case searchVariable env c of
         Just (IntType v)-> Just v
-        Just (FloatType v)-> Just v
         Just (BoolType _) -> error "Variable of type boolean!"
         Just (ArrayType _) -> error "Variable of type array!"
         Nothing -> error "undeclared variable"
 
-arithExprEval env (ArrVariable s c) =
+
+arithExprEval env (ArrayVariable s c) =
     case searchVariable env s of 
         Just (ArrayType a)-> Just (readElemArray a j)
             where Just j = arithExprEval env c
         Just (IntType _)-> error "Variable of type integer!"
-        Just (FloatType _)-> error "Variable of type float!"
         Just (BoolType _) -> error "Variable of type boolean!"
         Nothing -> error "undeclared variable"
 
@@ -69,6 +68,14 @@ arithExprEval env (Power a b) = pure (^) <*> (arithExprEval env a) <*> (arithExp
 
 arithExprEval env (Sqrt a b) = pure (!^) <*> (arithExprEval env a) <*> (arithExprEval env b)
 
+
+arithExprEvalFloat:: Env -> ArithExpr -> Maybe Float
+arithExprEvalFloat env (ArithVariable c) = 
+    case searchVariable env c of
+        Just (FloatType v)-> Just v
+        Just (BoolType _) -> error "Variable of type boolean!"
+        Just (ArrayType _) -> error "Variable of type array!"
+        Nothing -> error "undeclared variable"
 
 -- BOOLEAN EXPRESSION EVALUATION
 

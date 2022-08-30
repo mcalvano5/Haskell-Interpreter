@@ -254,7 +254,7 @@ arithTerm = do chain arithFactor op
     where op = (do symbol "*"; return Mul)
             <|> (do symbol "/"; return Div)
             <|> (do symbol "^"; return Power)
-            <|> do symbol "!^"; return Sqrt
+            <|> (do symbol "!^"; return Sqrt)
 
 arithFactor :: Parser ArithExpr
 arithFactor = do
