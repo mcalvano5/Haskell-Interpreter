@@ -5,7 +5,8 @@ import GrammarMIRIANA
     ( BoolExpr(BooleanIdentifier, Or, And, Boolean, Not, LowerThan,
                GreaterThan, LowerEqualThan, GreaterEqualThan, EqualTo, Different),
       ArithExpr(ArithVariable, Sum, Sub, Mul, Div, Power, Sqrt, Constant,
-                ArrayVariable), ArrayExpr(ArrVariable, Array), Command (..) )
+                ArrVariable), ArrayExpr(ArrVariable, Array), Command (..) )
+
 
 
 
@@ -361,11 +362,11 @@ arithDeclare =
         symbol "="
         value <- arithExpr
         symbol ";"
-        return (DeclareInteger id (Just value))
+        return (ArithDeclare id (Just value))
         <|>
         do
-            symbolP ";"
-            return (DeclareInteger id Nothing)
+            symbol ";"
+            return (ArithDeclare id Nothing)
 
 
 boolDeclare :: Parser Command
@@ -375,12 +376,12 @@ boolDeclare =
     id <- identifier
     symbol "="
     val <- boolExpr
-        symbolP ";"
-        return (DeclareBoolean id (Just val))
-        <|>
-        do
-            symbolP ";"
-            return (DeclareBoolean id Nothing)
+    symbol ";"
+    return (BoolDeclare id (Just val))
+    <|>
+    do
+      symbolP ";"
+      return (BoolDeclare id Nothing)
 
 
 arrDeclare  :: Parser Command
@@ -395,11 +396,11 @@ arrDeclare  =
         symbol "="
         value <- arithExpr
         symbol ";"
-        return (DeclareArray name size (Just value))
+        return (ArrDeclare name size (Just value))
         <|>
         do
             symbol ";"
-            return (DeclareArray name size Nothing)
+            return (ArrDeclare name size Nothing)
 
 arithAssign :: Parser Command
 arithAssign =
@@ -408,7 +409,7 @@ arithAssign =
     symbol "="
     value <- arithExpr
     symbol ";"
-    return (AssignInteger id value)
+    return (ArithAssign id value)
     
 
 boolAssign  :: Parser Command
@@ -418,10 +419,10 @@ boolAssign  =
     symbol "="
     value <- boolExpr
     symbol ";"
-    return (AssignBoolean id value)
+    return (BoolAssign id value)
 
 
-arrOneAssign :: Parser Com
+arrOneAssign :: Parser Command
 arrOneAssign = do
     name <- identifier
     symbol "["
@@ -429,17 +430,10 @@ arrOneAssign = do
     symbol "]"
     symbol "="
     value <- arithExpr
-    symbolP ";"
-    return (arrOneAssign name position value)
-
-
-arrMulAssign :: Parser Com
-arrMulAssign = do
-    name <- identifier
-    symbol "="
-    value <- aExpr
     symbol ";"
-    return (arrMulAssign name value)
+    return (ArrOneAssign name position value)
+
+
 
 arrMulAssign  :: Parser Command
 arrMulAssign  =
@@ -452,7 +446,7 @@ arrMulAssign  =
     b <- many (do symbol ","; arithExp)
     symbol "]"
     symbol ";"
-    return (ArrFullAssign i (Array (a:b)))
+    return (ArrMulAssign i (Array (a:b)))
     <|>
       do 
         symbol "["
@@ -462,7 +456,7 @@ arrMulAssign  =
         symbol "["
         symbol "]"
         symbol ";"
-        return (ArrFullAssign i (ArrayVariable x)) 
+        return (ArrMulAssign i (ArrVariable x)) 
 
 skip  :: Parser Command
 skip  =
