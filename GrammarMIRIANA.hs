@@ -7,7 +7,7 @@ data Type =
     | FloatType Float
     | CharType Char
     | BoolType Bool
-    | ArrayTypeInt [Int]
+    | ArrayType [Int]
     deriving Show 
 
 --Arithmetic expressions

@@ -8,8 +8,6 @@ import GrammarMIRIANA
                 ArrVariable), ArrayExpr(ArrVariable, Array), Command (..) )
 
 
-
-
 newtype Parser a = P (String -> Maybe (a, String))
 
 instance Functor Parser where
