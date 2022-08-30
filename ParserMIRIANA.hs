@@ -5,7 +5,7 @@ import GrammarMIRIANA
     ( BoolExpr(BooleanIdentifier, Or, And, Boolean, Not, LowerThan,
                GreaterThan, LowerEqualThan, GreaterEqualThan, EqualTo, Different),
       ArithExpr(ArithVariable, Sum, Sub, Mul, Div, Power, Sqrt, Constant,
-                ArrayVariable), ArrayExpr(ArrayVariable, Array), Command (..) )
+                ArrayVariable), ArrayExpr(ArrVariable, Array), Command (..) )
 
 
 
