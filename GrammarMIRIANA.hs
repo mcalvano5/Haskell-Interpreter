@@ -56,8 +56,9 @@ data Command =
     | ArithAssign String ArithExpr
     | BoolAssign String BoolExpr   
     | ArrOneAssign String ArithExpr ArithExpr --Assign a value to a specific array cell. Example: array[0] = 1
-    | ArrMulAssign String ArithExpr --Assign whole array to a pre-declared variable. Example: a = [1,4,6]
+    | ArrMulAssign String ArrayExpr --Assign whole array to a pre-declared variable. Example: a = [1,4,6]
     | Skip
     deriving Show   
 
 
+type Program = [Command] 

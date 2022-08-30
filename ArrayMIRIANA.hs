@@ -1,6 +1,3 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Redundant bracket" #-}
-{-# HLINT ignore "Use :" #-}
 module ArrayMIRIANA where
 
 type Array = [Int]
@@ -8,9 +5,9 @@ type Array = [Int]
 
 -- This function has the purpose to declare an Array variable. Given in input the dimension dim that the array should have, 
 --i return an Array variable
-arrayDeclare ::  Int -> Array
-arrayDeclare 0 = []
-arrayDeclare dim = 0 : arrayDeclare (dim-1)  
+arrayDeclaration ::  Int -> Array
+arrayDeclaration 0 = []
+arrayDeclaration dim = 0 : arrayDeclaration (dim-1)  
 
 
 -- This function has the purpose to read a certain element from an Array, give in input the array itself and the index of the position to read

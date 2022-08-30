@@ -1,11 +1,10 @@
-{-# LANGUAGE BlockArguments #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
 {-# HLINT ignore "Use <$>" #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# OPTIONS_GHC -Wno-deferred-out-of-scope-variables #-}
 {-# HLINT ignore "Use :" #-}
 {-# HLINT ignore "Avoid lambda" #-}
+{-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 module InterpreterMIRIANA where
 import ArrayMIRIANA
 import GrammarMIRIANA    
@@ -68,16 +67,15 @@ arithExprEval env (Div a b) = pure (div) <*> (arithExprEval env a) <*> (arithExp
 
 arithExprEval env (Power a b) = pure (^) <*> (arithExprEval env a) <*> (arithExprEval env b)
 
-arithExprEval env (Sqrt a b) = pure (!^) <*> (arithExprEval env a) <*> (arithExprEval env b)
 
 
 arithExprEvalFloat:: Env -> ArithExpr -> Maybe Float
 arithExprEvalFloat env (ArithVariable c) = 
-    case searchVariable env c of
+  case searchVariable env c of
         Just (FloatType v)-> Just v
         Just (BoolType _) -> error "Variable of type boolean!"
         Just (ArrayType _) -> error "Variable of type array!"
-        Nothing -> error "undeclared variable"
+        Nothing -> error "undeclared variable"--
 
 -- BOOLEAN EXPRESSION EVALUATION
 
@@ -143,7 +141,7 @@ execProgr e ((IfThenElse b nc nc') : cs) =
 
 execProgr e ((While b nc) : cs) =
         case boolExprEval e b of
-                Just True -> execProgr e (nc ++ [(Whiledo b nc)] ++ cs)
+                Just True -> execProgr e (nc ++ [(While b nc)] ++ cs)
                 Just False -> execProgr e cs
                 Nothing -> error "Error while"
 
@@ -154,7 +152,7 @@ execProgr e ((ArithAssign s a) : cs ) =
                                         where Just z = arithExprEval e a
                 Just (FloatType _)-> error "Assignment of a float value to an array one not allowed!"
                 Just (BoolType _) -> error "Assignment of a boolean value to an array one not allowed!"
-                Just (ArrayType _) -> errore "Assignment of an array value to an array one not allowed!"
+                Just (ArrayType _) -> error "Assignment of an array value to an array one not allowed!"
                 Nothing -> error "Error assign" 
 
 
@@ -206,17 +204,18 @@ execProgr e ((ArrayDeclare s a) : cs ) =
                 Just _ -> error "double declaration"
                 Nothing -> execProgr (modifyEnv e var) cs
                          where var = Variable s (ArrayType z)
-                                 where z = declareArray j 
+                                 where z = arrayDeclaration j 
                                         where Just j = arithExprEval e a
                 Nothing -> error "Error declare"
 
                 
-execProgr env ((ArrMulAssign v exr) : cs) =
+
+execProgr env ((ArrMulAssign v exp) : cs) =
   case searchVariable env v of
-    Just (ArrayType a) -> case arrExprEval env expr of
+    Just (ArrayType a) -> case arrExprEval env exp of
                             Just b -> if length a == length  b 
                             then
                                 execProgr (modifyEnv env (Variable v (ArrayType b))) cs
                             else error "Length not valid!"
-                            Nothing -> error "aExp evaluation of array failed"
+                            Nothing -> error "arithExp evaluation of array failed"
     Nothing -> error "Undeclared variable!"

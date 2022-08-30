@@ -1,12 +1,10 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use <$>" #-}
+{-# OPTIONS_GHC -Wno-deferred-out-of-scope-variables #-}
 module ParserMIRIANA where
-import GrammarMIRIANA
-    ( BoolExpr(BooleanIdentifier, Or, And, Boolean, Not, LowerThan,
-               GreaterThan, LowerEqualThan, GreaterEqualThan, EqualTo, Different),
-      ArithExpr(ArithVariable, Sum, Sub, Mul, Div, Power, Sqrt, Constant,
-                ArrVariable), ArrayExpr(ArrVariable, Array), Command (..) )
-
+import GrammarMIRIANA (ArithExpr (..), BoolExpr (..), Command (..), ArrayExpr(Array, ArrVariable) )
+import InterpreterMIRIANA ()
+import ArrayMIRIANA
 
 newtype Parser a = P (String -> Maybe (a, String))
 
@@ -339,11 +337,10 @@ command =
    <|> while 
    <|> arithDeclare 
    <|> boolDeclare 
-   <|> arrayDeclare 
+   <|> arrayDeclare
    <|> arithAssign 
    <|> boolAssign 
-   <|> arrOneAssign 
-   <|> arrMulAssign 
+   <|> arrAssign 
    <|> skip
 
 
@@ -354,60 +351,44 @@ program = do many command
 arithDeclare :: Parser Command
 arithDeclare =
   do
-    symbol "int"
-    id <- identifier
-    do
-        symbol "="
-        value <- arithExpr
-        symbol ";"
-        return (ArithDeclare id (Just value))
-        <|>
-        do
-            symbol ";"
-            return (ArithDeclare id Nothing)
+    symbol "int"              -- int id = 4;
+    i <- identifier
+    symbol "="
+    r <- ArithDeclare i <$> arithExp      
+    symbol ";"
+    return r
 
 
 boolDeclare :: Parser Command
 boolDeclare =
   do
-    symbol "bool"           
-    id <- identifier
+    symbol "bool"             -- bool id=True;
+    i <- identifier
     symbol "="
-    val <- boolExpr
+    r <- BoolDeclare i <$> boolExp
     symbol ";"
-    return (BoolDeclare id (Just val))
-    <|>
-    do
-      symbolP ";"
-      return (BoolDeclare id Nothing)
+    return r
 
 
-arrDeclare  :: Parser Command
-arrDeclare  =
+arrayDeclare  :: Parser Command
+arrayDeclare  =
   do
-    symbol "array"            
+    symbol "arr"             -- arr id[n];   
+    i <- identifier
     symbol "["
-    size <- arithExpr
-    symbolP "]"
-    name <- identifier
-    do
-        symbol "="
-        value <- arithExpr
-        symbol ";"
-        return (ArrDeclare name size (Just value))
-        <|>
-        do
-            symbol ";"
-            return (ArrDeclare name size Nothing)
+    j <- arithExp 
+    symbol "]"
+    symbol ";"
+    return (ArrayDeclare i j)  
 
 arithAssign :: Parser Command
 arithAssign =
   do
     i <- identifier
     symbol "="
-    value <- arithExpr
+    r <- ArithAssign i <$> arithExp 
     symbol ";"
-    return (ArithAssign id value)
+    return r
     
 
 boolAssign  :: Parser Command
@@ -415,21 +396,9 @@ boolAssign  =
   do
     id <- identifier
     symbol "="
-    value <- boolExpr
+    value <- boolExp
     symbol ";"
     return (BoolAssign id value)
-
-
-arrOneAssign :: Parser Command
-arrOneAssign = do
-    name <- identifier
-    symbol "["
-    position <- arithExpr
-    symbol "]"
-    symbol "="
-    value <- arithExpr
-    symbol ";"
-    return (ArrOneAssign name position value)
 
 
 
@@ -437,24 +406,35 @@ arrMulAssign  :: Parser Command
 arrMulAssign  =
   do
     i <- identifier  
-    do 
-    symbol "="
-    symbol "["
-    a <- arithExp
-    b <- many (do symbol ","; arithExp)
-    symbol "]"
-    symbol ";"
-    return (ArrMulAssign i (Array (a:b)))
-    <|>
-      do 
-        symbol "["
-        symbol "]"
-        symbol "="
-        x <- identifier
-        symbol "["
-        symbol "]"
-        symbol ";"
-        return (ArrMulAssign i (ArrVariable x)) 
+    do
+      name <- identifier
+      symbol "["
+      position <- arithExp
+      symbol "]"
+      symbol "="
+      value <- arithExp
+      symbol ";"
+      return (ArrOneAssign name position value)
+      <|>
+        do     
+          symbol "="
+          symbol "["
+          i' <- arithExp
+          i'' <- many (do symbol ","; arithExp)
+          symbol "]"
+          symbol ";"
+          return (ArrMulAssign i (Array (i':i'')))
+      <|>
+        do 
+          symbol "["
+          symbol "]"
+          symbol "="
+          x <- identifier
+          symbol "["
+          symbol "]"
+          symbol ";"
+          return (ArrMulAssign i (ArrVariable x)) 
+
 
 skip  :: Parser Command
 skip  =
@@ -479,9 +459,9 @@ ifThenElse =
       symbol "{"
       elseP <- program
       symbol "}"
-      return (Ifelse b thenP (Just elseProg))
+      return (IfThenElse b thenP elseP)
       <|> do
-        return (Ifelse b thenP Nothing)
+        return (IfThenElse b thenP [Skip])
 
 
 while :: Parser Command
