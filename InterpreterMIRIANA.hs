@@ -52,8 +52,8 @@ arithExprEval env (ArrVariable s c) =
     case searchVariable env s of 
         Just (ArrayType a)-> Just (readElemArray a j)
             where Just j = arithExprEval env c
-        Just (IntType v)-> error "Variable of type integer!"
-        Just (FloatType v)-> error "Variable of type float!"
+        Just (IntType _)-> error "Variable of type integer!"
+        Just (FloatType _)-> error "Variable of type float!"
         Just (BoolType _) -> error "Variable of type boolean!"
         Nothing -> error "undeclared variable"
 
@@ -79,8 +79,8 @@ boolExprEval env (Boolean b) = Just b
 boolExprEval env ( BooleanIdentifier id_bool)=
     case searchVariable env id_bool of 
         Just (BoolType v) -> Just v
-        Just (IntType v)-> error "Variable of type integer!"
-        Just (FloatType v)-> error "Variable of type float!"
+        Just (IntType _)-> error "Variable of type integer!"
+        Just (FloatType _)-> error "Variable of type float!"
         Just (ArrayType _) -> error "Variable of type array!"
         Nothing -> error "undeclared variable"
 
@@ -115,7 +115,7 @@ arrExprEval e (Array a) = if hasFailed
 arrayExpEval s (ArrVariable v) = 
   case get s v of
     Just (IntType _) -> error "Assignment of an integer value to an array one not allowed!"
-    Just (FloatType v)-> error "Assignment of a float value to an array one not allowed!"
+    Just (FloatType _)-> error "Assignment of a float value to an array one not allowed!"
     Just (BoolType _) -> error "Assignment of an boolean value to an array one not allowed!"
     Just (ArrayType a) -> Just a
     Nothing -> error "Variable to assign not found"
@@ -146,7 +146,9 @@ execProgr e ((ArithAssign s a) : cs ) =
                 Just (IntType _ ) -> execProgr (modifyEnv e var) cs
                                where var = Variable s (IntType z)
                                         where Just z = arithExprEval e a
-                Just _ -> error "Type mismatch"
+                Just (FloatType _)-> error "Assignment of a float value to an array one not allowed!"
+                Just (BoolType _) -> error "Assignment of a boolean value to an array one not allowed!"
+                Just (ArrayType _) -> errore "Assignment of an array value to an array one not allowed!"
                 Nothing -> error "Error assign" 
 
 
@@ -155,7 +157,9 @@ execProgr e ((BoolAssign s b) : cs ) =
                 Just (BoolType _ ) -> execProgr (modifyEnv e var) cs
                                where var = Variable s (BoolType z)
                                         where Just z = boolExprEval e b
-                Just _ -> error "Type mismatch"
+                Just (IntType _)-> error "Assignment of an integer value to an array one not allowed!"
+                Just (FloatType _)-> error "Assignment of a float value to an array one not allowed!"
+                Just (ArrayType _)-> error "Assignment of an array value to an array one not allowed!"
                 Nothing -> error "Error assign" 
 
 execProgr e (( ArithDeclare s a ) : cs ) =
@@ -185,7 +189,9 @@ execProgr e ((ArrOneAssign s i a) : cs ) =
                                                 where   
                                                         Just a'= arithExprEval e a 
                                                         Just j = arithExprEval e i
-                Just _ -> error "Type mismatch"
+                Just (BoolType _)-> error "Assignment of a bool value to an array one not allowed!"
+                Just (FloatType _)-> error "Assignment of a float value to an array one not allowed!"
+                Just (IntType _)-> error "Assignment of an integer value to an array one not allowed!"
                 Nothing -> error "Error assign" 
 
 
