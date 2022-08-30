@@ -402,8 +402,8 @@ boolAssign  =
 
 
 
-arrMulAssign  :: Parser Command
-arrMulAssign  =
+arrAssign  :: Parser Command
+arrAssign  =
   do
     i <- identifier  
     do
