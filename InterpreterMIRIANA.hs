@@ -4,6 +4,8 @@
 {-# HLINT ignore "Use <$>" #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# OPTIONS_GHC -Wno-deferred-out-of-scope-variables #-}
+{-# HLINT ignore "Use :" #-}
+{-# HLINT ignore "Avoid lambda" #-}
 module InterpreterMIRIANA where
 import ArrayMIRIANA
 import GrammarMIRIANA    
@@ -22,9 +24,8 @@ type Env = [Variable]
 modifyEnv :: Env -> Variable -> Env 
 modifyEnv [] var = [var]
 modifyEnv (x:xs) newVar = 
-    if (name x) == (name newVar) 
-        then [newVar] ++ xs 
-    else[x] ++ modifyEnv xs newVar
+    if (name x) == (name newVar) then [newVar] ++ xs 
+        else[x] ++ modifyEnv xs newVar
 
 
 -- This returns the value of the variable 
@@ -38,6 +39,7 @@ searchVariable (x:xs) varname = if (name x) == varname
 
 --ARITHMETIC EXPRESSION EVALUATION--
 arithExprEval:: Env -> ArithExpr -> Maybe Int
+
 arithExprEval env (Constant c) = Just c
 
 arithExprEval env (ArithVariable c) = 
@@ -119,11 +121,8 @@ arrExprEval e (Array a) = if hasFailed
                                               Nothing -> True
                                               Just x -> False) r
                                             r = map (\exp -> arithExprEval e exp) a
-arrayExpEval s (ArrVariable v) = 
-  case get s v of
-    Just (IntType _) -> error "Assignment of an integer value to an array one not allowed!"
-    Just (FloatType _)-> error "Assignment of a float value to an array one not allowed!"
-    Just (BoolType _) -> error "Assignment of an boolean value to an array one not allowed!"
+arrExprEval e (ArrVariable v) = 
+  case searchVariable e v of
     Just (ArrayType a) -> Just a
     Nothing -> error "Variable to assign not found"
 
@@ -211,9 +210,10 @@ execProgr e ((ArrayDeclare s a) : cs ) =
                                         where Just j = arithExprEval e a
                 Nothing -> error "Error declare"
 
-execProgr env ((ArrMulAssign v exp) : cs) =
+                
+execProgr env ((ArrMulAssign v exr) : cs) =
   case searchVariable env v of
-    Just (ArrayType a) -> case arrExprEval env exp of
+    Just (ArrayType a) -> case arrExprEval env expr of
                             Just b -> if length a == length  b 
                             then
                                 execProgr (modifyEnv env (Variable v (ArrayType b))) cs
