@@ -1,6 +1,7 @@
 module Main where
 import ParserMIRIANA
-import InterpreterMIRIANA
+    ( parse, parseFailed, getParsedCommands, getRemainingInput )
+import InterpreterMIRIANA ( execProgr, emptyState )
 
 main :: IO ()
 main = do

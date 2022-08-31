@@ -1,9 +1,3 @@
-{-# HLINT ignore "Use <$>" #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-{-# OPTIONS_GHC -Wno-deferred-out-of-scope-variables #-}
-{-# HLINT ignore "Use :" #-}
-{-# HLINT ignore "Avoid lambda" #-}
-{-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 module InterpreterMIRIANA where
 import ArrayMIRIANA
 import GrammarMIRIANA 

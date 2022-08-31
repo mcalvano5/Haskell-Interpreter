@@ -1,6 +1,7 @@
 module GrammarMIRIANA where
  --  In Haskell, you can have many constructors for your data type, 
  --  separated by a vertical bar |. Each of your constructors then has its own list of data types
+import Dictionary
 
 data Type = 
     IntType Int

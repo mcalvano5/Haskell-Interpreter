@@ -1,10 +1,5 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Use <$>" #-}
-{-# OPTIONS_GHC -Wno-deferred-out-of-scope-variables #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module ParserMIRIANA where
 import GrammarMIRIANA (ArithExpr (..), BoolExpr (..), Command (..), ArrayExpr(Array, ArrVariable) )
-import InterpreterMIRIANA ()
 import ArrayMIRIANA
 
 newtype Parser a = P (String -> Maybe (a, String))
@@ -26,11 +21,13 @@ getParsedCommands (c, _) = c
 
 getRemainingInput :: ([Command], String) -> String
 getRemainingInput (_, s) = s
+
+
+
 instance Functor Parser where
   fmap g (P p) = P (\input -> case p input of
     Nothing -> Nothing
     Just (v, out) -> Just (g v, out) )
-
 
 
 instance Applicative Parser where
@@ -61,14 +58,21 @@ class Monad f => Alternative f where
     where
         rest a = (do f <- op; a' <- p; rest (f a a')) <|> return a
 
+instance Alternative Maybe where
+  empty = Nothing
+  Nothing <|> my = my
+  (Just x) <|> _ = Just x
+
 
 instance Alternative Parser where
   -- empty :: Parser a
-  empty = P (\input -> Nothing)
-  -- <|> :: Parser a -> Parser a -> Parser b
-  (P p) <|> (P q) = P (\input -> case p input of
-                                  Nothing -> q input
-                                  Just (v, out) -> Just (v, out))
+  empty = P (const Nothing)
+  (P p) <|> (P q) =
+    P
+      ( \input -> case p input of
+          Nothing -> q input
+          Just (v, out) -> Just (v, out)
+      )
 
 -- Reads the next character from the string given as input
 readNext :: Parser Char
