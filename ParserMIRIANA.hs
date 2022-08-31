@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use <$>" #-}
 {-# OPTIONS_GHC -Wno-deferred-out-of-scope-variables #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module ParserMIRIANA where
 import GrammarMIRIANA (ArithExpr (..), BoolExpr (..), Command (..), ArrayExpr(Array, ArrVariable) )
 import InterpreterMIRIANA ()
@@ -8,10 +9,28 @@ import ArrayMIRIANA
 
 newtype Parser a = P (String -> Maybe (a, String))
 
+-- Main function that executes the parsing, given a string written in IMPure language
+parse :: String -> ([Command], String)
+parse s = case p s of
+  Nothing -> ([], "")
+  Just (c, s) -> (c, s)
+  where
+    (P p) = program
+
+parseFailed :: ([Command], String) -> Bool
+parseFailed (_, "") = False
+parseFailed (_, _) = True
+
+getParsedCommands :: ([Command], String) -> [Command]
+getParsedCommands (c, _) = c
+
+getRemainingInput :: ([Command], String) -> String
+getRemainingInput (_, s) = s
 instance Functor Parser where
   fmap g (P p) = P (\input -> case p input of
     Nothing -> Nothing
     Just (v, out) -> Just (g v, out) )
+
 
 
 instance Applicative Parser where

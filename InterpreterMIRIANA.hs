@@ -1,4 +1,4 @@
-{-# HLINT ignore "Redundant bracket" #-}
+
 {-# HLINT ignore "Use <$>" #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# OPTIONS_GHC -Wno-deferred-out-of-scope-variables #-}
@@ -7,33 +7,13 @@
 {-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 module InterpreterMIRIANA where
 import ArrayMIRIANA
-import GrammarMIRIANA    
+import GrammarMIRIANA 
+import Dictionary   
 
--- These are the components of the Environment
+type Env = Dict String Type
 
-data Variable = Variable {name  :: String,
-                          value :: Type } deriving Show
-
--- Array of tuples of type Variable
-type Env = [Variable]
-
--- I define the operations to exploit the Env
-
--- This modifies the Environment after some modification to variables.
-modifyEnv :: Env -> Variable -> Env 
-modifyEnv [] var = [var]
-modifyEnv (x:xs) newVar = 
-    if (name x) == (name newVar) then [newVar] ++ xs 
-        else[x] ++ modifyEnv xs newVar
-
-
--- This returns the value of the variable 
-searchVariable:: Env -> String-> Maybe Type
-searchVariable [] varname = Nothing
-searchVariable (x:xs) varname = if (name x) == varname
-        then Just (value x)
-                                else searchVariable xs
-                                varname
+emptyState :: Env
+emptyState = empty
 
 
 --ARITHMETIC EXPRESSION EVALUATION--
@@ -42,7 +22,7 @@ arithExprEval:: Env -> ArithExpr -> Maybe Int
 arithExprEval env (Constant c) = Just c
 
 arithExprEval env (ArithVariable c) = 
-    case searchVariable env c of
+    case get env c of
         Just (IntType v)-> Just v
         Just (BoolType _) -> error "Variable of type boolean!"
         Just (ArrayType _) -> error "Variable of type array!"
@@ -50,7 +30,7 @@ arithExprEval env (ArithVariable c) =
 
 
 arithExprEval env (ArrayVariable s c) =
-    case searchVariable env s of 
+    case get env s of 
         Just (ArrayType a)-> Just (readElemArray a j)
             where Just j = arithExprEval env c
         Just (IntType _)-> error "Variable of type integer!"
@@ -71,7 +51,7 @@ arithExprEval env (Power a b) = pure (^) <*> (arithExprEval env a) <*> (arithExp
 
 arithExprEvalFloat:: Env -> ArithExpr -> Maybe Float
 arithExprEvalFloat env (ArithVariable c) = 
-  case searchVariable env c of
+  case get env c of
         Just (FloatType v)-> Just v
         Just (BoolType _) -> error "Variable of type boolean!"
         Just (ArrayType _) -> error "Variable of type array!"
@@ -84,7 +64,7 @@ boolExprEval :: Env -> BoolExpr -> Maybe Bool
 boolExprEval env (Boolean b) = Just b
 
 boolExprEval env ( BooleanIdentifier id_bool)=
-    case searchVariable env id_bool of 
+    case get env id_bool of 
         Just (BoolType v) -> Just v
         Just (IntType _)-> error "Variable of type integer!"
         Just (FloatType _)-> error "Variable of type float!"
@@ -120,7 +100,7 @@ arrExprEval e (Array a) = if hasFailed
                                               Just x -> False) r
                                             r = map (\exp -> arithExprEval e exp) a
 arrExprEval e (ArrVariable v) = 
-  case searchVariable e v of
+  case get e v of
     Just (ArrayType a) -> Just a
     Nothing -> error "Variable to assign not found"
 
@@ -145,77 +125,67 @@ execProgr e ((While b nc) : cs) =
                 Just False -> execProgr e cs
                 Nothing -> error "Error while"
 
-execProgr e ((ArithAssign s a) : cs ) =
-        case searchVariable e s of
-                Just (IntType _ ) -> execProgr (modifyEnv e var) cs
-                               where var = Variable s (IntType z)
-                                        where Just z = arithExprEval e a
+execProgr e ((ArithAssign s ex) : cs ) =
+        case get e s of
+                Just (IntType _) -> execProgr (insert e s (IntType ex')) cs
+                        where
+                                Just ex' = arithExprEval e ex
                 Just (FloatType _)-> error "Assignment of a float value to an array one not allowed!"
                 Just (BoolType _) -> error "Assignment of a boolean value to an array one not allowed!"
                 Just (ArrayType _) -> error "Assignment of an array value to an array one not allowed!"
                 Nothing -> error "Error assign" 
 
 
-execProgr e ((BoolAssign s b) : cs ) =
-        case searchVariable e s of
-                Just (BoolType _ ) -> execProgr (modifyEnv e var) cs
-                               where var = Variable s (BoolType z)
-                                        where Just z = boolExprEval e b
+execProgr e ((BoolAssign s ex) : cs ) =
+        case get e s of
+                Just (BoolType _) -> execProgr (insert e s (BoolType ex')) cs
+                        where
+                                Just ex' = boolExprEval e ex
                 Just (IntType _)-> error "Assignment of an integer value to an array one not allowed!"
                 Just (FloatType _)-> error "Assignment of a float value to an array one not allowed!"
                 Just (ArrayType _)-> error "Assignment of an array value to an array one not allowed!"
                 Nothing -> error "Error assign" 
 
-execProgr e (( ArithDeclare s a ) : cs ) =
-        case arithExprEval e a of
-                Just exp -> case searchVariable e s of
-                        Just _ -> error "double declaration"
-                        Nothing -> execProgr (modifyEnv e var) cs
-                               where var = Variable s (IntType z)
-                                        where Just z = arithExprEval e a
-                Nothing -> error "Error declare"
-
-execProgr e (( BoolDeclare s a ) : cs ) =
-        case boolExprEval e a of
-                Just exp -> case searchVariable e s of
-                        Just _ -> error "double declaration"
-                        Nothing -> execProgr (modifyEnv e var) cs
-                               where var = Variable s (BoolType z)
-                                        where Just z = boolExprEval e a
-                Nothing -> error "Error declare"
+execProgr e (( ArithDeclare s ex ) : cs ) =
+        case arithExprEval e ex of
+                Just ex' -> case get e s of
+                        Just _ -> error "MultipleDeclaration"
+                        Nothing -> execProgr (insert e s (IntType ex')) cs
+                Nothing -> error "InvalidArithmeticExpression"
 
 
-execProgr e ((ArrOneAssign s i a) : cs ) =
-        case searchVariable e s of
-                Just (ArrayType x ) -> execProgr (modifyEnv e var) cs
-                               where var = Variable s (ArrayType z)
-                                        where z = insertElemArray x j a' 
-                                                where   
-                                                        Just a'= arithExprEval e a 
-                                                        Just j = arithExprEval e i
+execProgr e (( BoolDeclare s ex ) : cs ) =
+     case boolExprEval e ex of
+        Just ex' -> case get e s of
+                Just _ -> error "MultipleDeclaration"
+                Nothing -> execProgr (insert e s (BoolType ex')) cs
+        Nothing -> error "InvalidBooleanExpression"
+
+
+execProgr e ((ArrOneAssign s i ex) : cs ) =
+        case get e s of
+                Just (ArrayType a ) -> execProgr (insert e s (ArrayType (insertElemArray a j ex'))) cs
+                        where 
+                                Just ex'= arithExprEval e ex 
+                                Just j = arithExprEval e i
                 Just (BoolType _)-> error "Assignment of a bool value to an array one not allowed!"
                 Just (FloatType _)-> error "Assignment of a float value to an array one not allowed!"
                 Just (IntType _)-> error "Assignment of an integer value to an array one not allowed!"
                 Nothing -> error "Error assign" 
 
-
-execProgr e ((ArrayDeclare s a) : cs ) =
-        case searchVariable e s of
+execProgr e ((ArrayDeclare s i) : cs ) =
+        case get e s of
                 Just _ -> error "double declaration"
-                Nothing -> execProgr (modifyEnv e var) cs
-                         where var = Variable s (ArrayType z)
-                                 where z = arrayDeclaration j 
-                                        where Just j = arithExprEval e a
-                Nothing -> error "Error declare"
+                Nothing -> execProgr (insert e s (ArrayType (arrayDeclaration j))) cs
+                        where Just j = arithExprEval e i
 
-                
 
-execProgr env ((ArrMulAssign v exp) : cs) =
-  case searchVariable env v of
-    Just (ArrayType a) -> case arrExprEval env exp of
-                            Just b -> if length a == length  b 
-                            then
-                                execProgr (modifyEnv env (Variable v (ArrayType b))) cs
-                            else error "Length not valid!"
-                            Nothing -> error "arithExp evaluation of array failed"
-    Nothing -> error "Undeclared variable!"
+--execProgr e ((ArrMulAssign v exp) : cs) =
+  --case get e v of
+    --Just (ArrayType a) -> case arrExprEval e exp of
+      --                      Just b -> if length a == length  b 
+        --                    then
+          --                      execProgr (insert e s (Variable v (ArrayType b))) cs
+             --               else error "Length not valid!"
+               --             Nothing -> error "arithExp evaluation of array failed"
+    --Nothing -> error "Undeclared variable!"
