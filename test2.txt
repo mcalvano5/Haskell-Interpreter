@@ -1,0 +1,7 @@
+float n = 1 e2;
+int x= 2;
+int i = 0;
+while (i <= n) {
+	x= x*x;
+	i = i+1;
+}
