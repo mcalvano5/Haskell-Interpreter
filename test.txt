@@ -1,4 +1,4 @@
-int x = -1;
+array j = 2;
 int y = 5;
 bool i = True ;
 if (x >= y){

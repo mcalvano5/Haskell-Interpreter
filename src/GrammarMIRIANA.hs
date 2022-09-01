@@ -5,7 +5,6 @@ import Dictionary
 
 data Type = 
     IntType Int
-    | FloatType Float
     | CharType Char
     | BoolType Bool
     | ArrayType [Int]

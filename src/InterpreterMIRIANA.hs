@@ -1,3 +1,6 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Redundant bracket" #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module InterpreterMIRIANA where
 import ArrayMIRIANA
 import GrammarMIRIANA 
@@ -41,15 +44,6 @@ arithExprEval env (Div a b) = pure (div) <*> (arithExprEval env a) <*> (arithExp
 arithExprEval env (Power a b) = pure (^) <*> (arithExprEval env a) <*> (arithExprEval env b)
 
 
-
-arithExprEvalFloat:: Env -> ArithExpr -> Maybe Float
-arithExprEvalFloat env (ArithVariable c) = 
-  case get env c of
-        Just (FloatType v)-> Just v
-        Just (BoolType _) -> error "Variable of type boolean!"
-        Just (ArrayType _) -> error "Variable of type array!"
-        Nothing -> error "undeclared variable"--
-
 -- BOOLEAN EXPRESSION EVALUATION
 
 boolExprEval :: Env -> BoolExpr -> Maybe Bool
@@ -60,7 +54,6 @@ boolExprEval env ( BooleanIdentifier id_bool)=
     case get env id_bool of 
         Just (BoolType v) -> Just v
         Just (IntType _)-> error "Variable of type integer!"
-        Just (FloatType _)-> error "Variable of type float!"
         Just (ArrayType _) -> error "Variable of type array!"
         Nothing -> error "undeclared variable"
 
@@ -123,7 +116,6 @@ execProgr e ((ArithAssign s ex) : cs ) =
                 Just (IntType _) -> execProgr (insert e s (IntType ex')) cs
                         where
                                 Just ex' = arithExprEval e ex
-                Just (FloatType _)-> error "Assignment of a float value to an array one not allowed!"
                 Just (BoolType _) -> error "Assignment of a boolean value to an array one not allowed!"
                 Just (ArrayType _) -> error "Assignment of an array value to an array one not allowed!"
                 Nothing -> error "Error assign" 
@@ -135,7 +127,6 @@ execProgr e ((BoolAssign s ex) : cs ) =
                         where
                                 Just ex' = boolExprEval e ex
                 Just (IntType _)-> error "Assignment of an integer value to an array one not allowed!"
-                Just (FloatType _)-> error "Assignment of a float value to an array one not allowed!"
                 Just (ArrayType _)-> error "Assignment of an array value to an array one not allowed!"
                 Nothing -> error "Error assign" 
 
@@ -162,7 +153,6 @@ execProgr e ((ArrOneAssign s i ex) : cs ) =
                                 Just ex'= arithExprEval e ex 
                                 Just j = arithExprEval e i
                 Just (BoolType _)-> error "Assignment of a bool value to an array one not allowed!"
-                Just (FloatType _)-> error "Assignment of a float value to an array one not allowed!"
                 Just (IntType _)-> error "Assignment of an integer value to an array one not allowed!"
                 Nothing -> error "Error assign" 
 

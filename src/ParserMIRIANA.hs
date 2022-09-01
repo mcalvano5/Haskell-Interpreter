@@ -177,50 +177,6 @@ int =
     return (-n)
     <|> nat
 
--- Natural number with Float
-natFloat :: Parser Float
-natFloat =
-    do float
-    where float = do 
-                    xs <- some digitCase 
-                    symbol "e" 
-                    symbol "+" 
-                    xs <- some digitCase
-                    return (read xs)
-                  <|> 
-                  do 
-                    xs <- some digitCase 
-                    symbol "e" 
-                    symbol "-" 
-                    xs <- some digitCase
-                    return (read xs)
-                  <|> 
-                  do 
-                    xs <- some digitCase 
-                    symbol "." 
-                    xs <- some digitCase
-                    return (read xs)
-                  <|> 
-                  do 
-                    xs <- some digitCase 
-                    symbol "." 
-                    xs <- some digitCase
-                    symbol "e" 
-                    symbol "-" 
-                    xs <- some digitCase
-                    return (read xs)
-       
-
-
---Float positive and negative numbers
-float :: Parser Float
-float =
-    do
-    char '-'
-    nf <- natFloat
-    return (-nf)
-    <|> natFloat
-
 
 --Spaces
 spaces :: [Char]
